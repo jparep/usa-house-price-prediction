@@ -13,7 +13,7 @@ df = pd.read_csv('./data/USA_Housing.csv')
 sns.pairplot(df)
 
 # Visualize the distribution of the target variable
-sns.distplot(df['Price'])
+sns.histplot(df['Price'])
 
 # Define the feature variables (X) and target variable (y)
 # Dropping 'Price' as its tje target variable, and 'Address' as the it's irrelevant variable
