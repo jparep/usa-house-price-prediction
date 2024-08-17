@@ -39,3 +39,9 @@ print(f'Average Cross-Validation MAE: {-np.mean(cv_score)}')
 
 # Create a DataFrame to view the coeffient of the model
 cdf = pd.DataFrame(lr.coef_, poly.get_feature_names_out(input_features=X.columns), columns='Coefficients')
+
+# Predict the target values using test data
+y_pred = lr.predict(X_test)
+
+# Evaluate model using Meam Absolute Error (MAE)
+mae = mean_absolute_error(y_test, y_pred)
