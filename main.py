@@ -34,4 +34,5 @@ lr.fit(X_train, y_train)
 
 # Cross-Validation to evaluate the mdoel performance
 cv_score = cross_val_predict(lr, X_train, y_train, cv=5, scoring='neg_mean_absolute_error')
-
+print(f'Cross-Validation MAE Scores: {-cv_score}')
+print(f'Average Cross-Validation MAE: {-np.mean(cv_score)}')
