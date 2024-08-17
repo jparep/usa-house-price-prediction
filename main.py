@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_predict
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error
@@ -32,5 +32,6 @@ lr = LinearRegression()
 # Train the model using training data
 lr.fit(X_train, y_train)
 
-# Predict
+# Cross-Validation to evaluate the mdoel performance
+cv_score = cross_val_predict(lr, X_train, y_train, cv=5, scoring='neg_mean_absolute_error')
 
