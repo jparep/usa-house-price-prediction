@@ -36,3 +36,6 @@ lr.fit(X_train, y_train)
 cv_score = cross_val_predict(lr, X_train, y_train, cv=5, scoring='neg_mean_absolute_error')
 print(f'Cross-Validation MAE Scores: {-cv_score}')
 print(f'Average Cross-Validation MAE: {-np.mean(cv_score)}')
+
+# Create a DataFrame to view the coeffient of the model
+cdf = pd.DataFrame(lr.coef_, poly.get_feature_names_out(input_features=X.columns), columns='Coefficients')
