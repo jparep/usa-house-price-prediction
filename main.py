@@ -44,7 +44,7 @@ plt.ylabel('Predicted Prices')
 plt.title('Actual vs Predicted House Prices')
 
 # Show plots
-plt.show
+plt.show()
 
 # Evaluate the model using mean absolute error(MAE)
 mae = mean_absolute_error(y_test, y_pred)
