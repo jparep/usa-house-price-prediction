@@ -19,3 +19,7 @@ y = df['Price']
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
+# Ploynomial Features to capture non-linear relationships
+poly = PolynomialFeatures(degree=2, include_bias=False)
+X_poly = poly.fit_transform(X_scaled)
+
