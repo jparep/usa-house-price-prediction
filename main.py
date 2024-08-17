@@ -23,3 +23,7 @@ X_scaled = scaler.fit_transform(X)
 poly = PolynomialFeatures(degree=2, include_bias=False)
 X_poly = poly.fit_transform(X_scaled)
 
+#  Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_poly, y, test_size=0.2, random_state=123)
+
+#
