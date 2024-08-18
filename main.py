@@ -8,6 +8,20 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 # Load the housing data into a DataFrame
 df = pd.read_csv('./data/USA_Housing.csv')
 
+# Filter numeric columns only
+numeric_cols = df.select_dtypes(include=[np.number])
+
+# Identify and remove outliers based on the IQR method
+Q1 = numeric_cols.quantile(0.25)
+Q3 = numeric_cols.quantile(0.75)
+IQR = Q3 - Q1
+
+# Define outlier threshold
+outliers = ((numeric_cols < (Q1 - 1.5 * IQR)) | (numeric_cols > (Q3 + 1.5 * IQR))).any(axis=1)
+
+# Removing outliers
+df = df[~outliers]
+
 # Feature Engineering: Adding Room-to-Bedroom Ratio as a new feature
 df['Room2Bedroom_ratio'] = df['Avg. Area Number of Rooms'] / df['Avg. Area Number of Bedrooms']
 
