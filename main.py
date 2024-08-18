@@ -41,15 +41,15 @@ def preprocess_data(df):
 
 def train_lasso(X_train, y_train, X, poly, alpha=0.1):
     """Train a Lasso Regression Model"""
-    lasso = Lasso(alpha=alpha, random_state=123)
-    lasso.fit(X_train, y_train)
+    l1 = Lasso(alpha=alpha, random_state=123)
+    l1.fit(X_train, y_train)
     
     lasso_coef = pd.DataFrame({
         'Feature': poly.get_feature_names_out(input_feature=X.columns),
-        'Coefficient': lasso.coef_
+        'Coefficient': l1.coef_
     })
     logging.info('Lasso Model training Completed!')
-    return lasso, lasso_coef
+    return l1, lasso_coef
 
 def train_linear_regression(X_train, y_train, poly, X_columns):
     """Trains a Linear Regression mdoel and performs cross-validation."""
@@ -79,3 +79,13 @@ def evaluate_model(model, X_test, y_test):
     return evaluation_metrix
 
 
+def selct_best_model(l1_metrix, lr_metrix):
+    """Selects the best model based on the evaluation metrics."""
+    best_model = None
+    if l1_metrix['MAE'] < lr_metrix['MAE']:
+        best_model = 'Lasso'
+    else:
+        best_model = 'Linear regression'
+    
+    logging.info(f'Best model selected: {best_model}')
+    return best_model
