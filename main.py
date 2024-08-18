@@ -37,4 +37,16 @@ def preprocess_data(df):
     X_ploy = poly.fit_transform(X_scaled)
     
     logging.info('Preprocessing data complete!')
-    return X_ploy, poly
+    return X, y, poly, X_ploy
+
+def train_lasso(X_train, y_train, X, poly, alpha=0.1):
+    """Train a Lasso Regression Model"""
+    lasso = Lasso(alpha=alpha, random_state=123)
+    lasso.fit(X_train, y_train)
+    
+    lasso_coef = pd.DataFrame({
+        'Feature': poly.get_feature_names_out(input_feature=X.columns),
+        'Coefficient': lasso.coef_
+    })
+    logging.info('Lasso Model training Completed!')
+    return lasso, lasso_coef
