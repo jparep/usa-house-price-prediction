@@ -145,4 +145,8 @@ if __name__ == "__main__":
     # Select and print the best model
     best_model, best_metrics = select_best_model(metrics)
     print(f'The Best Model is: {best_model}')
-    print(f'The Best Metrics are: {best_metrics}')
+    #print(f'The Best Metrics are: {best_metrics}')
+    print(f"The Best Metrics are :")
+    print(f"  - MAE: {best_metrics['MAE']:,.2f}")
+    print(f"  - MSE: {best_metrics['MSE']:,.2f}")
+    print(f"  - R2 : {best_metrics['R2']*100:.4f}")
