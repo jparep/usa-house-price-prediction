@@ -66,3 +66,16 @@ def train_linear_regression(X_train, y_train, poly, X_columns):
     logging.info('Linear Regression Trainng COmplete!')
     return lr, lr_coef, mean_cv_mae
 
+def evaluate_model(model, X_test, y_test):
+    """Evaluate the model on the test set."""
+    y_pred = model.predict(X_test)
+    
+    evaluation_metrix = {
+        'MAE': mean_absolute_error(y_test, y_pred),
+        'MSE': mean_squared_error(y_test, y_pred),
+        'R2': r2_score(y_test, y_pred)
+    }
+    logging.info('Model Evaluation completed!')
+    return evaluation_metrix
+
+
