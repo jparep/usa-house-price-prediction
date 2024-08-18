@@ -50,3 +50,19 @@ def train_lasso(X_train, y_train, X, poly, alpha=0.1):
     })
     logging.info('Lasso Model training Completed!')
     return lasso, lasso_coef
+
+def train_linear_regression(X_train, y_train, poly, X_columns):
+    """Trains a Linear Regression mdoel and performs cross-validation."""
+    lr = LinearRegression()
+    lr.fit(X_train, y_train)
+    
+    cv_score = cross_val_score(lr, X_train, y_train, cv=5, scoring='neg_mean_absolute_error')
+    mean_cv_mae = -np.mean(cv_score)
+    
+    lr_coef = pd.DataFrame({
+        'Feature': poly.get_feature_names_out(input_features=X_columns),
+        'Coefficients': lr.coef_
+    })
+    logging.info('Linear Regression Trainng COmplete!')
+    return lr, lr_coef, mean_cv_mae
+
