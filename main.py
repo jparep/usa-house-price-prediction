@@ -41,7 +41,7 @@ def preprocess_data(df, n_components=5):
     # Apply PCA
     pca = PCA(n_components=n_components)
     X_processed = pca.fit_transform(X_scaled)
-    return X_processed, pca
+    return y, X_processed
 
 def lasso_training(X_train, y_train, alpha=0.1):
     """Train Lasso REgression Model"""
@@ -91,4 +91,51 @@ def xgboost_training(X_train, y_train, n_estimators=100, learning_rate=0.1, rand
     xgb.fit(X_train , y_train)
     return xgb
 
+def evaluate_model(model, X_test, y_test):
+    """Evaluate the mdoel on the test data """
+    y_pred = model.predict(X_test)
+    
+    # Calculate the Evaluation Metrics
+    eval_metrics = {
+        'MAE': mean_absolute_error(y_test, y_pred),
+        'MSE': mean_squared_error(y_test, y_pred),
+        'R2': r2_score(y_test, y_pred)
+    }
+    
+def select_best_model(eval_metrics):
+    """Slects teh best mdoel based on MAE."""
+    best_model = min(eval_metrics, key=lambda k: eval_metrics[k]['MAE'])
+    best_metrics = eval_metrics[best_model]
+    return best_model, best_metrics
 
+if __name__=="__main__":
+    file_path = './data/USA_Hosuing.csv'
+    
+    # Load and process the data
+    df = load_data(file_path)
+    df = feature_engineering(df)
+    
+    # Preprocess teh data with PCA applied
+    y, X_processed = preprocess_data(df)
+
+    # Split the data into training and test sets
+    X_train, X_test, y_train, y_test = train_test_split(X_processed, y, test_size=0.2, random_state=123)
+    
+    # Train models
+    models = {
+        'Lasso': lasso_training(X_train, y_train)[0,],
+        'Ridge': ridge_training(X_train, y_train)[0],
+        'Linear regression': linear_regression_training(X_train, y_train)[0],
+        'ElasticNet': elastic_net_training(X_train, y_train)[0],
+        'Random Forest': random_forest_training(X_train, y_train)[0],
+        'SVR': svr_training(X_train, y_train)[0],
+        'XGBoost': xgboost_training(X_train, y_train)
+    }
+
+    # Evaluate all models and store their metrics
+    metrics = {name: evaluate_model(model, X_test, y_test) for name, model in models.items()}
+    
+    # Select and print the best model
+    best_model, best_metrics = select_best_model(metrics)
+    print(f'The Best Model is: {best_model}')
+    print(f'The Best Metrics is : {best_metrics}')
