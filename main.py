@@ -26,8 +26,8 @@ def feature_engineering(df):
     logging.info('Feature engineering completed!')
     return df
 
-def preprocess_data(df, apply_pca=False, n_components=None):
-    """Prepares the features matrix and target vector for model training."""
+def preprocess_data(df, apply_pca=False, n_components=None, poly_degree=2):
+    """Prepares the feature matrix and target vector for model training."""
     X = df.drop(['Price', 'Address'], axis=1, errors='ignore')
     y = df['Price']
     
@@ -38,13 +38,16 @@ def preprocess_data(df, apply_pca=False, n_components=None):
         pca = PCA(n_components=n_components)
         X_reduced = pca.fit_transform(X_scaled)
         logging.info(f'PCA applied with {n_components} components.')
+        transformer = pca
     else:
-        poly = PolynomialFeatures(degree=2, include_bias=False)
+        poly = PolynomialFeatures(degree=poly_degree, include_bias=False)
         X_reduced = poly.fit_transform(X_scaled)
-        logging.info('Polynomial features generated.')
+        logging.info(f'Polynomial features generated with degree {poly_degree}.')
+        transformer = poly
     
     logging.info('Preprocessing data complete!')
-    return X, y, X_reduced, pca if apply_pca else poly
+    return X, y, X_reduced, transformer
+
 
 def train_lasso(X_train, y_train, X_columns, transformer, alpha=0.1):
     """Trains a Lasso Regression model."""
