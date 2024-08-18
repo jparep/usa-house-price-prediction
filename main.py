@@ -1,56 +1,70 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split, cross_val_predict
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, Lasso
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 # Load the housing data into DataFrame
 df = pd.read_csv('./data/USA_Housing.csv')
 
-# Feature Engineering: Adding Room-to-Bedroom Ration as a new features
+# Feature Engineering: Adding Room-to-Bedroom Ratio as a new feature
 df['Room2Bedroom_ratio'] = df['Avg. Area Number of Rooms'] / df['Avg. Area Number of Bedrooms']
 
 # Define the feature variables and target variable
-X = df.drop(['Price', 'Address'])
+X = df.drop(['Price', 'Address'], axis=1, errors='ignore')
 y = df['Price']
 
 # Scale Features
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
-# Ploynomial Features to capture non-linear relationships
+# Polynomial Features to capture non-linear relationships
 poly = PolynomialFeatures(degree=2, include_bias=False)
 X_poly = poly.fit_transform(X_scaled)
 
-#  Split the data into training and testing sets
+# Split the data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X_poly, y, test_size=0.2, random_state=123)
 
-# Initalize Model
-lr = LinearRegression()
+# Initialize and train the Lasso regression model (L1 regularization)
+lasso = Lasso(alpha=0.1)
+lasso.fit(X_train, y_train)
 
-# Train the model using training data
-lr.fit(X_train, y_train)
+# Print Lasso coefficients
+lasso_coefficients = pd.DataFrame({
+    'Feature': poly.get_feature_names_out(input_features=X.columns),
+    'Coefficient': lasso.coef_
+})
+print('Lasso Coefficients:')
+print(lasso_coefficients)
 
-# Cross-Validation to evaluate the mdoel performance
-cv_score = cross_val_predict(lr, X_train, y_train, cv=5, scoring='neg_mean_absolute_error')
-print(f'Cross-Validation MAE Scores: {-cv_score}')
-print(f'Average Cross-Validation MAE: {-np.mean(cv_score)}')
+# Initialize and train the Linear Regression model
+linear_regression = LinearRegression()
+linear_regression.fit(X_train, y_train)
 
-# Create a DataFrame to view the coeffient of the model
-cdf = pd.DataFrame(lr.coef_, poly.get_feature_names_out(input_features=X.columns), columns='Coefficients')
+# Cross-Validation to evaluate the Linear Regression model performance
+cv_scores = cross_val_score(linear_regression, X_train, y_train, cv=5, scoring='neg_mean_absolute_error')
+mean_cv_mae = -np.mean(cv_scores)
+print(f'Average Cross-Validation MAE: {mean_cv_mae}')
+
+# Create a DataFrame to view the coefficients of the Linear Regression model
+lr_coefficients = pd.DataFrame({
+    'Feature': poly.get_feature_names_out(input_features=X.columns),
+    'Coefficient': linear_regression.coef_
+})
+print('Linear Regression Coefficients:')
+print(lr_coefficients)
 
 # Predict the target values using test data
-y_pred = lr.predict(X_test)
+y_pred = linear_regression.predict(X_test)
 
-# Evaluate model using Meam Absolute Error (MAE)
-mae = mean_absolute_error(y_test, y_pred)
-print(f'Mean Absolute Error: {mae}')
+# Evaluate the model
+evaluation_metrics = {
+    'Mean Absolute Error (MAE)': mean_absolute_error(y_test, y_pred),
+    'Mean Squared Error (MSE)': mean_squared_error(y_test, y_pred),
+    'R-Squared': r2_score(y_test, y_pred)
+}
 
-# Evaluate model using Mean Squared Error (MSE)
-mse = mean_squared_error(y_test, y_pred)
-print(f'Mean Squared Error: {mse}')
-
-# Evalaute Model using R-Squared
-r2 = r2_score(y_test, y_pred)
-print(f'R-Squared: {r2}')
+print('Evaluation Metrics:')
+for metric, value in evaluation_metrics.items():
+    print(f'{metric}: {value}')
