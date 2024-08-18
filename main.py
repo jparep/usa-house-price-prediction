@@ -51,7 +51,7 @@ def train_lasso(X_train, y_train, X, poly, alpha=0.1):
     logging.info('Lasso Model training Completed!')
     return l1, lasso_coef
 
-def train_linear_regression(X_train, y_train, poly, X_columns):
+def train_linear_regression(X_train, y_train, poly, X):
     """Trains a Linear Regression mdoel and performs cross-validation."""
     lr = LinearRegression()
     lr.fit(X_train, y_train)
@@ -60,7 +60,7 @@ def train_linear_regression(X_train, y_train, poly, X_columns):
     mean_cv_mae = -np.mean(cv_score)
     
     lr_coef = pd.DataFrame({
-        'Feature': poly.get_feature_names_out(input_features=X_columns),
+        'Feature': poly.get_feature_names_out(input_features=X.columns),
         'Coefficients': lr.coef_
     })
     logging.info('Linear Regression Trainng COmplete!')
@@ -89,3 +89,19 @@ def selct_best_model(l1_metrix, lr_metrix):
     
     logging.info(f'Best model selected: {best_model}')
     return best_model
+
+if __name__ == "__main__":
+    file_path = './data/USA_Housing.csv'
+    df = load_data(file_path)
+    df = feature_engineering(df)
+    
+    X, y, X_poly, poly = preprocess_data(df)
+    
+    X_train, X_test, y_train, y_test = train_test_split(X,y, test_size=0.2, random_state=123)
+    
+    # Train Lasso Model
+    l1, l1_coef = train_lasso(X_train, y_train, X, alpha=0.1)
+    l1_metrics = evaluate_model(l1, X_test, y_test)
+    print(f"lassor Model Evaluation Metrics: {l1_metrics}")
+    
+    # 
