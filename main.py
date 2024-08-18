@@ -45,3 +45,8 @@ y_pred = lr.predict(X_test)
 
 # Evaluate model using Meam Absolute Error (MAE)
 mae = mean_absolute_error(y_test, y_pred)
+print(f'Mean Absolute Error: {mae}')
+
+mse = mean_squared_error(y_test, y_pred)
+print(f'Mean Squared Error: {mse}')
+
