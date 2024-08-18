@@ -34,16 +34,10 @@ def preprocess_data(df, apply_pca=False, n_components=None, poly_degree=2):
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
     
-    if apply_pca and n_components:
-        pca = PCA(n_components=n_components)
-        X_reduced = pca.fit_transform(X_scaled)
-        logging.info(f'PCA applied with {n_components} components.')
-        transformer = pca
-    else:
-        poly = PolynomialFeatures(degree=poly_degree, include_bias=False)
-        X_reduced = poly.fit_transform(X_scaled)
-        logging.info(f'Polynomial features generated with degree {poly_degree}.')
-        transformer = poly
+    pca = PCA(n_components=n_components)
+    X_reduced = pca.fit_transform(X_scaled)
+    logging.info(f'PCA applied with {n_components} components.')
+    transformer = pca
     
     logging.info('Preprocessing data complete!')
     return X, y, X_reduced, transformer
