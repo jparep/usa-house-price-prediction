@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_predict
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 # Load the housing data into DataFrame
 df = pd.read_csv('./data/USA_Housing.csv')
@@ -47,6 +47,10 @@ y_pred = lr.predict(X_test)
 mae = mean_absolute_error(y_test, y_pred)
 print(f'Mean Absolute Error: {mae}')
 
+# Evaluate model using Mean Squared Error (MSE)
 mse = mean_squared_error(y_test, y_pred)
 print(f'Mean Squared Error: {mse}')
 
+# Evalaute Model using R-Squared
+r2 = r2_score(y_test, y_pred)
+print(f'R-Squared: {r2}')
