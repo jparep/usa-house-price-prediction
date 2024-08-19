@@ -23,12 +23,13 @@ def load_data(file_path):
         logging.error(f'Error loading data: {e}')
         raise
 
-def handle_outliers(df, column_name, lower_quantile=0.01, upper_quantile=0.99):
-    """Handle outliers by capping them at the specified quantiles."""
-    lower_bound = df[column_name].quantile(lower_quantile)
-    upper_bound = df[column_name].quantile(upper_quantile)
-    df[column_name] = np.clip(df[column_name], lower_bound, upper_bound)
-    logging.info(f'Outliers in {column_name} handled by capping at {lower_quantile} and {upper_quantile} quantiles.')
+def handle_outliers(df, columns, lower_quantile=0.01, upper_quantile=0.99):
+    """Handle outliers by capping them at the specified quantiles for the given columns."""
+    for column in columns:
+        lower_bound = df[column].quantile(lower_quantile)
+        upper_bound = df[column].quantile(upper_quantile)
+        df[column] = np.clip(df[column], lower_bound, upper_bound)
+        logging.info(f'Outliers in {column} handled by capping at {lower_quantile} and {upper_quantile} quantiles.')
     return df
 
 def feature_engineering(df, handle_outliers=False):
@@ -36,7 +37,9 @@ def feature_engineering(df, handle_outliers=False):
     df['Room2Bedroom_ratio'] = df['Avg. Area Number of Rooms'] / df['Avg. Area Number of Bedrooms']
     
     if handle_outliers:
-        df = handle_outliers(df, 'Price')
+        # Handle outliers in both target and selected features
+        outlier_columns = ['Price', 'Avg. Area Number of Rooms', 'Avg. Area Number of Bedrooms', 'Area Population']
+        df = handle_outliers(df, outlier_columns)
     
     # Filter out non-numeric columns before skewness correction
     numeric_df = df.select_dtypes(include=[np.number])
