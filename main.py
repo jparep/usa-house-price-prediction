@@ -37,16 +37,8 @@ def feature_engineering(df):
     
     if len(skewed_features) > 0:
         pt = PowerTransformer(method='yeo-johnson')
-        try:
-            df[skewed_features] = pt.fit_transform(df[skewed_features])
-            logging.info('Skewness correction applied to features.')
-        except ValueError as e:
-            logging.error(f'Error applying PowerTransformer: {e}')
-            raise
-    else:
-        logging.info('No skewed features found for transformation.')
-    
-    logging.info('Feature engineering and skewness correction completed!')
+        df[skewed_features] = pt.fit_transform(df[skewed_features])
+            
     return df
 
 def preprocess_data(df, n_components=5):
@@ -170,4 +162,4 @@ if __name__ == "__main__":
     print(f"The Best Metrics are :")
     print(f"  - MAE: {best_metrics['MAE']:,.2f}")
     print(f"  - MSE: {best_metrics['MSE']:,.2f}")
-    print(f"  - R2 : {best_metrics['R2']:.4f}")
+    print(f"  - R2 : {best_metrics['R2']*100:.2f}%")
