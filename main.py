@@ -1,15 +1,14 @@
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, PowerTransformer
 from sklearn.decomposition import PCA
-from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
 from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.svm import SVR
 from xgboost import XGBRFRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import logging
-
 
 # Logging Configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -27,6 +26,27 @@ def load_data(file_path):
 def feature_engineering(df):
     """Perform feature engineering on the dataset."""
     df['Room2Bedroom_ratio'] = df['Avg. Area Number of Rooms'] / df['Avg. Area Number of Bedrooms']
+    
+    # Filter out non-numeric columns before skewness correction
+    numeric_df = df.select_dtypes(include=[np.number])
+    
+    # Handle skewness in numeric features
+    skewed_feats = numeric_df.apply(lambda x: x.skew()).sort_values(ascending=False)
+    skewness_threshold = 0.75
+    skewed_features = skewed_feats[abs(skewed_feats) > skewness_threshold].index
+    
+    if len(skewed_features) > 0:
+        pt = PowerTransformer(method='yeo-johnson')
+        try:
+            df[skewed_features] = pt.fit_transform(df[skewed_features])
+            logging.info('Skewness correction applied to features.')
+        except ValueError as e:
+            logging.error(f'Error applying PowerTransformer: {e}')
+            raise
+    else:
+        logging.info('No skewed features found for transformation.')
+    
+    logging.info('Feature engineering and skewness correction completed!')
     return df
 
 def preprocess_data(df, n_components=5):
@@ -41,6 +61,8 @@ def preprocess_data(df, n_components=5):
     # Apply PCA
     pca = PCA(n_components=n_components)
     X_processed = pca.fit_transform(X_scaled)
+    logging.info(f'PCA applied with {n_components} components.')
+    
     return y, X_processed
 
 def lasso_training(X_train, y_train, alpha=0.1):
@@ -145,8 +167,7 @@ if __name__ == "__main__":
     # Select and print the best model
     best_model, best_metrics = select_best_model(metrics)
     print(f'The Best Model is: {best_model}')
-    #print(f'The Best Metrics are: {best_metrics}')
     print(f"The Best Metrics are :")
     print(f"  - MAE: {best_metrics['MAE']:,.2f}")
     print(f"  - MSE: {best_metrics['MSE']:,.2f}")
-    print(f"  - R2 : {best_metrics['R2']*100:.4f}")
+    print(f"  - R2 : {best_metrics['R2']:.4f}")
