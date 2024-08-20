@@ -1,0 +1,6 @@
+2024-08-20 02:00:52,593 - INFO - Data successfully loaded from ./data/USA_Housing.csv
+2024-08-20 02:00:52,597 - INFO - Outliers handled for column: Avg. Area Income
+2024-08-20 02:00:52,599 - INFO - Outliers handled for column: Avg. Area House Age
+2024-08-20 02:00:52,600 - INFO - Feature RoomBedroom_Ratio created.
+2024-08-20 02:00:52,881 - INFO - Trained Lasso with CV MAE: 81163.1498, R2: 0.9186
+2024-08-20 02:00:52,916 - INFO - Model Evaluation: {'MAE': 83719.94861764884, 'MSE': 10780100119.70822, 'R2': 0.9119627036785045}
