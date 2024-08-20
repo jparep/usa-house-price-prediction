@@ -10,3 +10,7 @@
 2024-08-20 02:01:48,431 - INFO - Feature RoomBedroom_Ratio created.
 2024-08-20 02:01:48,651 - INFO - Trained Lasso with CV MAE: 81163.1498, R2: 0.9186
 2024-08-20 02:01:48,688 - INFO - Model Evaluation: {'MAE': 83719.94861764884, 'MSE': 10780100119.70822, 'R2': 0.9119627036785045}
+2024-08-20 02:39:09,203 - INFO - Data successfully loaded from ./data/USA_Housing.csv
+2024-08-20 02:39:09,205 - INFO - Outliers handled for column: Avg. Area Income
+2024-08-20 02:39:09,208 - INFO - Outliers handled for column: Avg. Area House Age
+2024-08-20 02:39:09,209 - INFO - Feature RoomBedroom_Ratio created.

@@ -66,22 +66,22 @@ def preprocess_data(df, n_components=None):
 
 def train_model(model, X_train, y_train):
     """Trains a model with cross-validation and returns the model."""
-    cv_results = cross_validate(model, X_train, y_train, cv=5, scoring=['neg_mean_absolute_error', 'r2'])
-    mean_cv_mae = -cv_results['test_neg_mean_absolute_error'].mean()
-    mean_cv_r2 = cv_results['test_r2'].mean()
-    logging.info(f"Trained {model.__class__.__name__} with CV MAE: {mean_cv_mae:.4f}, R2: {mean_cv_r2:.4f}")
     model.fit(X_train, y_train)
     return model
 
 def hyperparameter_tuning(model, X_train, y_train):
     """Implement hyperparameter tunning for the model"""
     param_grid = {
-        
+        'alpha': [0.01, 0.1, 1, 10, 100]
     }
-    cv = GridSearchCV()
-    best_model = cv.best_estimator_
-    bet_prama = cv.best_params_
-    return best_model
+    grid_search = GridSearchCV(estimator=model,
+                               param_grid=param_grid,
+                               cv=5,
+                               scoring='neg_absolute_error',
+                               n_jobs=-1)
+    grid_search.fit(X_train, y_train)
+    logging.info(f"Best Model params: {grid_search.best_params_}")
+    return grid_search.best_estimator_
 
 def evaluate_model(model, X_test, y_test):
     """Evaluates the model performance on the test set."""
@@ -114,17 +114,27 @@ def main():
     X_train, X_test, y_train, y_test = train_test_split(X_processed, y, test_size=0.2, random_state=12)
     
     # Define Lasso Regression Model
-    lasso_model = Lasso(alpha=0.1, random_state=12)
+    lasso = Lasso(alpha=0.1, random_state=12)
     
     # Train model
-    trained_model = train_model(lasso_model, X_train, y_train)
+    trained_model = train_model(lasso, X_train, y_train)
     
-    # Evaluate the Model
+    # Hyperparameter tuning the model
+    best_model = hyperparameter_tuning(lasso, X_train, y_train)
+    
+    # Evaluate the Trained Model and Best Model
     eval_metrics = evaluate_model(trained_model, X_test, y_test)
+    eval_metrics_best_model = eval_metrics(best_model, X_test, y_test)
     
-    # Print Model Evaluation Metrics
-    print("Lasso Model Metrics:")
+    
+    # Print Trained Model evaluation metrics
+    print("Lasso Trained Model Metrics:")
     for metric, value in eval_metrics.items():
+        print(f"    - {metric}: {value:,.4f}")
+    
+    # Print Best Model evaluation metrics
+    print("Lasso Best Model Metrics:")
+    for metric, value in eval_metrics_best_model.items():
         print(f"    - {metric}: {value:,.4f}")
 
 if __name__ == "__main__":
