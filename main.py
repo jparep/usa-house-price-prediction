@@ -40,7 +40,7 @@ def feature_engineering(df):
     df['RoomBedroom_Ratio'] = df['Avg. Area Numbre of Rooms'] / df['Avg. Area Number of Bedrooms']
     return df
 
-def preprocessing(df, n_components=5):
+def preprocess_data(df, n_components=5):
     """Prepare the data for training, applie PCA directly"""
     X = df.drop(['Price', 'Address'], axis=1, errors='ignore')
     y = df['Price']
@@ -88,5 +88,36 @@ def evaluate_model(model, X_test, y_test):
         'R2': r2_score(y_test, y_pred)
     }
 
+    return eval_mx
+
+def main():
+    # Load Data
+    file_path = './data/USA_Housing.csv'
+    df = load_data(file_path)
     
+    # Feature Engineering
+    df = feature_engineering(df)
+    
+    # Preprocessing Data
+    X_processed, y = preprocess_data(df)
+    
+    # Split Data into Training and Testing sets
+    X_train, X_test, y_train, y_test = train_test_split(X_processed, y, test_size=0.2, random_state=12)
+    
+    # Define  Lasso Regression Model (L1 Regression)
+    l1 = Lasso(alpha=0.1, random_state=12)
+    
+    # Train model
+    model = train_model(l1, X_train, y_train)
+    
+    # Evaluate the Model
+    eval_metrics = evaluate_model(model, X_test, y_test)
+    
+    # Print Model Evaluation Matrics
+    print("Lasso Model Metrics:")
+    print(f"    - MAE: {eval_metrics['MAE']:,.2f}")
+    print(f"    - MSE: {eval_metrics['MSE']:,.2f}")
+    print(f"    - R2: {eval_metrics['R2']:.2f}")
+    
+     
     
