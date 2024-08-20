@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split, cross_validate
+from sklearn.model_selection import train_test_split, cross_validate, GridSearchCV
 from sklearn.linear_model import Lasso
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.preprocessing import StandardScaler
@@ -73,6 +73,16 @@ def train_model(model, X_train, y_train):
     model.fit(X_train, y_train)
     return model
 
+def hyperparameter_tuning(model, X_train, y_train):
+    """Implement hyperparameter tunning for the model"""
+    param_grid = {
+        
+    }
+    cv = GridSearchCV()
+    best_model = cv.best_estimator_
+    bet_prama = cv.best_params_
+    return best_model
+
 def evaluate_model(model, X_test, y_test):
     """Evaluates the model performance on the test set."""
     y_pred = model.predict(X_test)
@@ -115,7 +125,7 @@ def main():
     # Print Model Evaluation Metrics
     print("Lasso Model Metrics:")
     for metric, value in eval_metrics.items():
-        print(f"    - {metric}: {value:,.2f}")
+        print(f"    - {metric}: {value:,.4f}")
 
 if __name__ == "__main__":
     main()
