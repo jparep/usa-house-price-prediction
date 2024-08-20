@@ -3,10 +3,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler, PowerTransformer
 from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-from sklearn.svm import SVR
-from xgboost import XGBRFRegressor
+from sklearn.linear_model import Lasso
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import logging
 
@@ -23,36 +20,21 @@ def load_data(file_path):
         logging.error(f'Error loading data: {e}')
         raise
 
-def handle_outliers(df, columns, lower_quantile=0.01, upper_quantile=0.99):
-    """Handle outliers by capping them at the specified quantiles for the given columns."""
+def handle_outliers(df, columns):
+    """Handle outliers using the 1st quartile (Q1) and 3rd quartile (Q3) for the given columns."""
     for column in columns:
-        lower_bound = df[column].quantile(lower_quantile)
-        upper_bound = df[column].quantile(upper_quantile)
+        Q1 = df[column].quantile(0.25)
+        Q3 = df[column].quantile(0.75)
+        IQR = Q3 - Q1
+        lower_bound = Q1 - 1.5 * IQR
+        upper_bound = Q3 + 1.5 * IQR
         df[column] = np.clip(df[column], lower_bound, upper_bound)
-        logging.info(f'Outliers in {column} handled by capping at {lower_quantile} and {upper_quantile} quantiles.')
+        logging.info(f'Outliers in {column} handled by capping at Q1 and Q3 with IQR method.')
     return df
 
 def feature_engineering(df, handle_outliers=False):
     """Perform feature engineering on the dataset, with optional outlier handling."""
-    df['Room2Bedroom_ratio'] = df['Avg. Area Number of Rooms'] / df['Avg. Area Number of Bedrooms']
-    
-    if handle_outliers:
-        # Handle outliers in both target and selected features
-        outlier_columns = ['Price', 'Avg. Area Number of Rooms', 'Avg. Area Number of Bedrooms', 'Area Population']
-        df = handle_outliers(df, outlier_columns)
-    
-    # Filter out non-numeric columns before skewness correction
-    numeric_df = df.select_dtypes(include=[np.number])
-    
-    # Handle skewness in numeric features
-    skewness_threshold = 0.75
-    skewed_feats = numeric_df.apply(lambda x: x.skew()).sort_values(ascending=False)
-    skewed_features = skewed_feats[abs(skewed_feats) > skewness_threshold].index
-    
-    if len(skewed_features) > 0:
-        pt = PowerTransformer(method='yeo-johnson')
-        df[skewed_features] = pt.fit_transform(df[skewed_features])
-            
+    df['Room2Bedroom_ratio'] = df['Avg. Area Number of Rooms'] / df['Avg. Area Number of Bedrooms']   
     return df
 
 def preprocess_data(df, n_components=5):
@@ -90,12 +72,6 @@ def evaluate_model(model, X_test, y_test):
         'R2': r2_score(y_test, y_pred)
     }
     return eval_metrics
-    
-def select_best_model(eval_metrics):
-    """Select the best model based on MAE."""
-    best_model = min(eval_metrics, key=lambda k: eval_metrics[k]['MAE'])
-    best_metrics = eval_metrics[best_model]
-    return best_model, best_metrics
 
 if __name__ == "__main__":
     file_path = './data/USA_Housing.csv'
@@ -103,10 +79,7 @@ if __name__ == "__main__":
     # Load and process the data
     df = load_data(file_path)
     
-    # Set to True if you want to handle outliers
-    handle_outliers_flag = True
-    
-    df = feature_engineering(df, handle_outliers=handle_outliers_flag)
+    df = feature_engineering(df, handle_outliers)
     
     # Preprocess the data with PCA applied
     y, X_processed = preprocess_data(df)
@@ -114,28 +87,15 @@ if __name__ == "__main__":
     # Split the data into training and test sets
     X_train, X_test, y_train, y_test = train_test_split(X_processed, y, test_size=0.2, random_state=123)
     
-    # Define the models
-    models = {
-        'Lasso': Lasso(alpha=0.1, random_state=12),
-        'Ridge': Ridge(alpha=0.1, random_state=12),
-        'Linear Regression': LinearRegression(),
-        'ElasticNet': ElasticNet(alpha=1.0, l1_ratio=0.5, random_state=12),
-        'Random Forest': RandomForestRegressor(n_estimators=100, random_state=12),
-        'SVR': SVR(kernel='rbf', C=1.0),
-        'Gradient Boosting': GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, random_state=123),
-        'XGBoost': XGBRFRegressor(n_estimators=100, learning_rate=0.1, random_state=12)
-    }
-
-    # Train and evaluate models
-    metrics = {}
-    for name, model in models.items():
-        trained_model, _ = train_model(model, X_train, y_train)
-        metrics[name] = evaluate_model(trained_model, X_test, y_test)
+    # Define the Lasso model
+    lasso_model = Lasso(alpha=0.1, random_state=12)
     
-    # Select and print the best model
-    best_model, best_metrics = select_best_model(metrics)
-    print(f'The Best Model is: {best_model}')
-    print(f"The Best Metrics are :")
-    print(f"  - MAE: {best_metrics['MAE']:,.2f}")
-    print(f"  - MSE: {best_metrics['MSE']:,.2f}")
-    print(f"  - R2 : {best_metrics['R2']*100:.2f}%")
+    # Train and evaluate the Lasso model
+    trained_model, _ = train_model(lasso_model, X_train, y_train)
+    metrics = evaluate_model(trained_model, X_test, y_test)
+    
+    # Print the evaluation metrics
+    print(f"Lasso Model Metrics:")
+    print(f"  - MAE: {metrics['MAE']:,.2f}")
+    print(f"  - MSE: {metrics['MSE']:,.2f}")
+    print(f"  - R2 : {metrics['R2']*100:.2f}%")
