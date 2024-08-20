@@ -77,5 +77,16 @@ def train_model(model, X_train, y_train):
     print(f"Trained {model.__class__.__name__} with CV MAE: {mean_cv_mae}:.4f")
     return model
 
+def evaluate_model(model, X_test, y_test):
+    """Evaluate the mdoel performance"""
+    y_pred = model.predict(X_test)
+    
+    # Calculate the evluation matrics
+    eval_mx = {
+        'MAE': mean_absolute_error(y_test, y_pred),
+        'MSE': mean_squared_error(y_test, y_pred),
+        'R2': r2_score(y_test, y_pred)
+    }
+
     
     
