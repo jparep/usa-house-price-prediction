@@ -5,6 +5,7 @@ from sklearn.preprocessing import StandardScaler, FunctionTransformer
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.decomposition import PCA
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import logging
 
 # Logiging COnfiguration
@@ -60,3 +61,50 @@ def create_pipeline(n_components=None):
     ])
     return pipeline
 
+def hyperparameter_tuning(pipeline, X_train, y_train):
+    param_grid={
+        'model__alpha': [0.01, 0.1, 1, 10, 1000],
+        'model__max_inter': [1000, 2000, 5000]
+    }
+    grid_search = GridSearchCV(estimator=pipeline,
+                               param_grid=param_grid,
+                               cv=5,
+                               scoring='neg_absolute_error',
+                               n_jobs=-1)
+    grid_search.fit(X_train, y_train)
+    logging.info(f"Best Model params: {grid_search.best_estimator_}")
+    logging.info(f"Grid Search CV results: {grid_search.cv_results_}")
+    return grid_search.best_estimator_
+
+def evaluate_model(model, X_test, y_test):
+    y_pred = model.predict(X_test)
+    
+    eval_metrics = {
+        'MAE': mean_absolute_error(y_test, y_pred),
+        'MSE': mean_squared_error(y_test, y_pred),
+        'R2': r2_score(y_test, y_pred)
+    }
+    return eval_metrics
+
+def main():
+    file_path = './data/USA_Housing.csv'
+    df = load_data(file_path)
+    
+    handle_outliers = ['Avg. Area Income', 'Avg. Area House Age']
+    df = handle_outliers(df, handle_outliers)
+    
+    df = feature_engineering(df)
+    
+    X = df.drop(['Price', 'Address'], axis=1, errors='ignore')
+    y = df['Price']
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=12)
+    
+    pipeline = create_pipeline(n_components=5)
+    eval_metrics = hyperparameter_tuning(pipeline, X_train, y_train)
+    
+    for name, value in eval_metrics.items():
+        print(f"    - {name}: {value}:,.4f")
+        
+if __name__="__main__":
+    main()
