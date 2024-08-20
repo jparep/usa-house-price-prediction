@@ -1,12 +1,16 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.linear_model import Lasso
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from sklearn.preprocessing import StandardScaler, FunctionTransformer
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, make_scorer
+from sklearn.preprocessing import StandardScaler, RobustScaler, FunctionTransformer
 from sklearn.decomposition import PCA
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
+from sklearn.experimental import enable_iterative_imputer  # noqa
+from sklearn.impute import IterativeImputer
+import joblib
 import logging
+import numpy as np
 
 # Logging Configuration
 logging.basicConfig(level=logging.INFO, 
@@ -14,7 +18,7 @@ logging.basicConfig(level=logging.INFO,
                     handlers=[logging.FileHandler("app.log"), logging.StreamHandler()])
 
 def load_data(file_path):
-    """Loads data from a specified CSV file path."""
+    """Loads data from a specified CSV file path and validates it."""
     try:
         df = pd.read_csv(file_path)
         logging.info(f"Data successfully loaded from {file_path}")
@@ -29,19 +33,6 @@ def load_data(file_path):
         logging.error(f"An error occurred while loading the data: {e}")
         raise e
 
-def handle_outliers(df, columns):
-    """Handles outliers using the 1st and 3rd quartiles (IQR method)."""
-    for col in columns:
-        if col in df.columns:
-            Q1 = df[col].quantile(0.25)
-            Q3 = df[col].quantile(0.75)
-            IQR = Q3 - Q1
-            lower_bound = Q1 - 1.5 * IQR
-            upper_bound = Q3 + 1.5 * IQR
-            df[col] = df[col].clip(lower_bound, upper_bound)
-            logging.info(f"Outliers handled for column: {col}")
-    return df
-
 def feature_engineering(df):
     """Performs feature engineering on the DataFrame."""
     if 'Avg. Area Number of Rooms' in df.columns and 'Avg. Area Number of Bedrooms' in df.columns:
@@ -52,17 +43,17 @@ def feature_engineering(df):
 def create_pipeline(n_components=None):
     """Creates a pipeline for preprocessing and modeling."""
     # Define preprocessing steps
-    preprocessing_steps = []
-    
-    # Standard Scaler
-    preprocessing_steps.append(('scaler', StandardScaler()))
+    preprocessing_steps = [
+        ('imputer', IterativeImputer(random_state=12)),  # Handle missing data
+        ('robust_scaler', RobustScaler())  # Robust Scaler to handle outliers
+    ]
     
     # PCA if requested
     if n_components:
         preprocessing_steps.append(('pca', PCA(n_components=n_components)))
         logging.info(f"PCA will be applied with {n_components} components.")
     
-    # Combine preprocessing steps into a ColumnTransformer
+    # Combine preprocessing steps into a Pipeline
     preprocess = Pipeline(steps=preprocessing_steps)
     
     # Define the model
@@ -102,14 +93,19 @@ def evaluate_model(model, X_test, y_test):
     logging.info(f"Model Evaluation: {eval_metrics}")
     return eval_metrics
 
+def save_model(model, file_path):
+    """Serializes the model to a file."""
+    try:
+        joblib.dump(model, file_path)
+        logging.info(f"Model saved to {file_path}")
+    except Exception as e:
+        logging.error(f"Failed to save the model: {e}")
+        raise e
+
 def main():
     # Load Data
     file_path = './data/USA_Housing.csv'
     df = load_data(file_path)
-    
-    # Handle Outliers
-    outlier_columns = ['Avg. Area Income', 'Avg. Area House Age']
-    df = handle_outliers(df, outlier_columns)
     
     # Feature Engineering
     df = feature_engineering(df)
@@ -127,6 +123,9 @@ def main():
     
     # Evaluate the Best Model
     eval_metrics_best_model = evaluate_model(best_model, X_test, y_test)
+    
+    # Save the Best Model
+    save_model(best_model, 'best_lasso_model.pkl')
     
     # Print Best Model evaluation metrics
     print("Lasso Best Model Metrics:")
