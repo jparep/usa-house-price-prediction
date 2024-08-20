@@ -66,5 +66,16 @@ def preprocessing(df, n_components=5):
     pca = PCA(n_components=n_components)
     X_processed = pca.fit_transform(X_scaled)
     return X_processed, y
+
+def train_model(model, X_train, y_train):
+    """Train a model with cross-validation"""
+    model.fit(X_train, y_train)
+    
+    # Cross-Validation
+    cv_scores = cross_val_score(model, X_train, y_train, cv=5, scoring='neg_mean_absolute_error')
+    mean_cv_mae = -np.mean(cv_scores)
+    print(f"Trained {model.__class__.__name__} with CV MAE: {mean_cv_mae}:.4f")
+    return model
+
     
     
