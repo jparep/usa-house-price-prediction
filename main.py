@@ -35,3 +35,36 @@ def handle_outliers(df, columns):
             upper_bound = Q3 + 1.5 * IQR
             df[col] = np.clip(df[col], lower_bound, upper_bound)
     return df
+
+def feature_engineering(df):
+    df['RoomBedroom_Ratio'] = df['Avg. Area Numbre of Rooms'] / df['Avg. Area Number of Bedrooms']
+    return df
+
+def preprocessing(df, n_components=5):
+    """Prepare the data for training, applie PCA directly"""
+    X = df.drop(['Price', 'Address'], axis=1, errors='ignore')
+    y = df['Price']
+    
+    # Define dict witht the old names as key and kew shoter names as value
+    rename_col = {
+        'Avg. Area Income': 'Avg_Income',
+        'Avg. Area House Age': 'House_Age',
+        'Avg. Area Number of Rooms': 'Avg_Rooms',
+        'Avg. Area Number of Bedrooms': 'Avg_Bedrooms',
+        'Area Population': 'Population',
+        'Price': 'Price',
+        'RoomBedroom_Ratio': 'RoomBedroom_Ratio'
+    }
+    # Rename the columns using the rename() method
+    X.rename(columns=rename_col, inplace=True)
+    
+    # Standardize the feature matrix
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    
+    # Apply PCA
+    pca = PCA(n_components=n_components)
+    X_processed = pca.fit_transform(X_scaled)
+    return X_processed, y
+    
+    
