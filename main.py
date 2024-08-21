@@ -11,11 +11,19 @@ import joblib
 import logging
 
 # Logging Configuration
-logging.basicConfig(level=logging.INFO, 
-                    format='%(asctime)s - %(levelname)s - %(message)s',
-                    handlers=[logging.FileHandler("app.log"), logging.StreamHandler()])
+def setup_logging(log_file: str = "app.log"):
+    logging.basicConfig(level=logging.INFO, 
+                        format='%(asctime)s - %(levelname)s - %(message)s',
+                        handlers=[logging.FileHandler(log_file), logging.StreamHandler()])
 
-def load_data(file_path):
+class Config:
+    DATA_PATH = './data/USA_Housing.csv'
+    MODEL_SAVE_PATH = 'best_lasso_model.pkl'
+    N_COMPONENTS = 5
+    TEST_SIZE = 0.2
+    RANDOM_STATE = 12
+
+def load_data(file_path: str) -> pd.DataFrame:
     """Loads and validates data from a specified CSV file."""
     try:
         df = pd.read_csv(file_path)
@@ -31,50 +39,46 @@ def load_data(file_path):
         logging.error(f"An error occurred while loading the data: {e}")
         raise e
 
-def feature_engineering(df):
+def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
     """Performs feature engineering on the DataFrame."""
-    # Creating a new feature based on the ratio of rooms to bedrooms
     if 'Avg. Area Number of Rooms' in df.columns and 'Avg. Area Number of Bedrooms' in df.columns:
         df['RoomBedroom_Ratio'] = df['Avg. Area Number of Rooms'] / df['Avg. Area Number of Bedrooms']
         logging.info("Feature RoomBedroom_Ratio created.")
     return df
 
-def create_pipeline(n_components=None):
-    """Creates a preprocessing and modeling pipeline."""
-    # Define the preprocessing steps: imputation for missing data, robust scaling to handle outliers
-    preprocessing_steps = [
-        ('imputer', IterativeImputer(random_state=12)),  # Handle missing data
-        ('robust_scaler', RobustScaler())  # Scale features robustly to minimize the impact of outliers
+def prepare_data(df: pd.DataFrame, target: str, test_size: float = 0.2, random_state: int = 12):
+    """Prepares data by splitting it into training and test sets."""
+    X = df.drop([target, 'Address'], axis=1, errors='ignore')
+    y = df[target]
+    return train_test_split(X, y, test_size=test_size, random_state=random_state)
+
+def create_preprocessing_pipeline(n_components: int = None) -> Pipeline:
+    """Creates a preprocessing pipeline."""
+    steps = [
+        ('imputer', IterativeImputer(random_state=12)), 
+        ('robust_scaler', RobustScaler())
     ]
     
-    # Optionally apply PCA for dimensionality reduction
     if n_components:
-        preprocessing_steps.append(('pca', PCA(n_components=n_components)))
+        steps.append(('pca', PCA(n_components=n_components)))
         logging.info(f"PCA will be applied with {n_components} components.")
     
-    # Combine preprocessing steps into a pipeline
-    preprocess = Pipeline(steps=preprocessing_steps)
-    
-    # Define the model: Lasso regression
-    model = Lasso(random_state=12)
-    
-    # Create the full pipeline including preprocessing and modeling
-    pipeline = Pipeline(steps=[
-        ('preprocess', preprocess),
+    return Pipeline(steps=steps)
+
+def create_model_pipeline(preprocess_pipeline: Pipeline, model=Lasso(random_state=12)) -> Pipeline:
+    """Creates a modeling pipeline that includes preprocessing."""
+    return Pipeline(steps=[
+        ('preprocess', preprocess_pipeline),
         ('model', model)
     ])
-    
-    return pipeline
 
-def hyperparameter_tuning(pipeline, X_train, y_train):
+def hyperparameter_tuning(pipeline: Pipeline, X_train: pd.DataFrame, y_train: pd.Series) -> Pipeline:
     """Performs hyperparameter tuning using GridSearchCV."""
-    # Define the parameter grid for tuning the Lasso model
     param_grid = {
         'model__alpha': [0.01, 0.1, 1, 10, 100],
         'model__max_iter': [1000, 2000, 5000]
     }
     
-    # Perform grid search with cross-validation
     grid_search = GridSearchCV(estimator=pipeline, param_grid=param_grid, cv=5, 
                                scoring='neg_mean_absolute_error', n_jobs=-1)
     grid_search.fit(X_train, y_train)
@@ -84,21 +88,22 @@ def hyperparameter_tuning(pipeline, X_train, y_train):
     
     return grid_search.best_estimator_
 
-def evaluate_model(model, X_test, y_test):
-    """Evaluates the model performance on the test set."""
-    # Predict on the test set
-    y_pred = model.predict(X_test)
+class ModelEvaluator:
+    def __init__(self, model: Pipeline):
+        self.model = model
     
-    # Calculate evaluation metrics
-    eval_metrics = {
-        'MAE': mean_absolute_error(y_test, y_pred),
-        'MSE': mean_squared_error(y_test, y_pred),
-        'R2': r2_score(y_test, y_pred)
-    }
-    logging.info(f"Model Evaluation: {eval_metrics}")
-    return eval_metrics
+    def evaluate(self, X_test: pd.DataFrame, y_test: pd.Series) -> dict:
+        """Evaluates the model performance on the test set."""
+        y_pred = self.model.predict(X_test)
+        eval_metrics = {
+            'MAE': mean_absolute_error(y_test, y_pred),
+            'MSE': mean_squared_error(y_test, y_pred),
+            'R2': r2_score(y_test, y_pred)
+        }
+        logging.info(f"Model Evaluation: {eval_metrics}")
+        return eval_metrics
 
-def save_model(model, file_path):
+def save_model(model: Pipeline, file_path: str) -> None:
     """Serializes the model to a file."""
     try:
         joblib.dump(model, file_path)
@@ -107,33 +112,27 @@ def save_model(model, file_path):
         logging.error(f"Failed to save the model: {e}")
         raise e
 
-def main():
+def main(file_path: str = Config.DATA_PATH, model_save_path: str = Config.MODEL_SAVE_PATH):
     """Executes data loading, preprocessing, model training, tuning, evaluation, and saving."""
-    # Load Data
-    file_path = './data/USA_Housing.csv'  # Path to your dataset
-    df = load_data(file_path)
+    setup_logging()
     
-    # Perform feature engineering
+    df = load_data(file_path)
     df = feature_engineering(df)
     
-    # Prepare data for training and testing
-    X = df.drop(['Price', 'Address'], axis=1, errors='ignore')  # Features
-    y = df['Price']  # Target variable
+    X_train, X_test, y_train, y_test = prepare_data(df, target='Price', 
+                                                    test_size=Config.TEST_SIZE, 
+                                                    random_state=Config.RANDOM_STATE)
     
-    # Split data into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=12)
+    preprocess_pipeline = create_preprocessing_pipeline(n_components=Config.N_COMPONENTS)
+    pipeline = create_model_pipeline(preprocess_pipeline)
     
-    # Create and tune the pipeline
-    pipeline = create_pipeline(n_components=5)  # Apply PCA with 5 components
     best_model = hyperparameter_tuning(pipeline, X_train, y_train)
     
-    # Evaluate the best model on the test set
-    eval_metrics_best_model = evaluate_model(best_model, X_test, y_test)
+    evaluator = ModelEvaluator(best_model)
+    eval_metrics_best_model = evaluator.evaluate(X_test, y_test)
     
-    # Save the best model to a file
-    save_model(best_model, 'best_lasso_model.pkl')
+    save_model(best_model, model_save_path)
     
-    # Print evaluation metrics
     print("Lasso Best Model Metrics:")
     for metric, value in eval_metrics_best_model.items():
         print(f"    - {metric}: {value:,.4f}")
