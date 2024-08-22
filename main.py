@@ -1,7 +1,7 @@
 import os
 import yaml
 import pandas as pd
-from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.model_selection import train_test_split, cross_val_score, KFold
 from sklearn.linear_model import Lasso
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.preprocessing import RobustScaler
@@ -12,7 +12,8 @@ from sklearn.impute import IterativeImputer
 import joblib
 import logging
 import optuna
-from optuna.integration import SklearnPruningCallback
+from sklearn.model_selection import cross_val_score
+
 
 class Config:
     """Loads configuration from a YAML file or environment variables."""
@@ -85,29 +86,29 @@ class ModelPipeline:
         ])
         return self.model
 
-    def hyperparameter_tuning_with_optuna(self, X_train: pd.DataFrame, y_train: pd.Series) -> Pipeline:
+    
+    def hyperparameter_tuning_with_optuna(self, pipeline: Pipeline, X_train: pd.DataFrame, y_train: pd.Series) -> Pipeline:
         """Performs hyperparameter tuning using Optuna."""
+        
         def objective(trial):
-            alpha = trial.suggest_loguniform('alpha', 1e-3, 1e1)
-            max_iter = trial.suggest_int('max_iter', 1000, 5000)
+            alpha = trial.suggest_float('model__alpha', 0.01, 100, log=True)
+            max_iter = trial.suggest_int('model__max_iter', 1000, 5000)
             
-            self.model.set_params(model__alpha=alpha, model__max_iter=max_iter)
+            pipeline.set_params(model__alpha=alpha, model__max_iter=max_iter)
             
-            pruning_callback = SklearnPruningCallback(trial, "neg_mean_absolute_error")
-            score = cross_val_score(self.model, X_train, y_train, cv=5, scoring='neg_mean_absolute_error', n_jobs=-1,
-                                    error_score='raise', fit_params={'callbacks': [pruning_callback]})
+            score = cross_val_score(pipeline, X_train, y_train, cv=5, scoring='neg_mean_absolute_error', n_jobs=-1)
             return score.mean()
 
-        study = optuna.create_study(direction="maximize")
+        study = optuna.create_study(direction="minimize")
         study.optimize(objective, n_trials=50, timeout=600)
         
-        logging.info(f"Best params from Optuna: {study.best_params}")
+        logging.info(f"Best params: {study.best_params}")
         best_params = study.best_params
         
-        self.model.set_params(model__alpha=best_params['alpha'], model__max_iter=best_params['max_iter'])
-        self.model.fit(X_train, y_train)
+        pipeline.set_params(**best_params)
+        pipeline.fit(X_train, y_train)
         
-        return self.model
+        return pipeline
 
     def evaluate_model(self, X_test: pd.DataFrame, y_test: pd.Series) -> dict:
         """Evaluates the model performance on the test set."""
@@ -138,7 +139,7 @@ class ModelPipeline:
         
         self.create_model_pipeline()
         
-        best_model = self.hyperparameter_tuning_with_optuna(X_train, y_train)
+        best_model = self.hyperparameter_tuning_with_optuna(self.model, X_train, y_train)
         
         eval_metrics_best_model = self.evaluate_model(X_test, y_test)
         
