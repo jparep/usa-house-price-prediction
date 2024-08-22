@@ -12,13 +12,18 @@ from sklearn.impute import IterativeImputer
 import joblib
 import logging
 import optuna
-from sklearn.model_selection import cross_val_score
 
 
 class Config:
     """Loads configuration from a YAML file or environment variables."""
-    with open("config.yaml", "r") as file:
-        config = yaml.safe_load(file)
+    config_path = "config.yaml"
+    
+    if os.path.exists(config_path):
+        with open(config_path, "r") as file:
+            config = yaml.safe_load(file)
+    else:
+        logging.error(f"Configuration file '{config_path}' not found.")
+        raise FileNotFoundError(f"Configuration file '{config_path}' not found.")
     
     DATA_PATH = config.get('DATA_PATH', './data/USA_Housing.csv')
     MODEL_SAVE_PATH = config.get('MODEL_SAVE_PATH', 'best_lasso_model.pkl')

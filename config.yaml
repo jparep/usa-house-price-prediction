@@ -1,0 +1,5 @@
+DATA_PATH: './data/USA_Housing.csv'
+MODEL_SAVE_PATH: './models/best_lasso_model.pkl'
+N_COMPONENTS: 5
+TEST_SIZE: 0.2
+RANDOM_STATE: 12

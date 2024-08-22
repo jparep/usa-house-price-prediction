@@ -740,3 +740,15 @@
       dtype=int32)}
 2024-08-20 22:50:48,947 - INFO - Model Evaluation: {'MAE': 83716.26417039713, 'MSE': 10852736255.16595, 'R2': 0.9113695098389362}
 2024-08-20 22:50:48,952 - INFO - Model saved to best_lasso_model.pkl
+2024-08-21 20:20:17,961 - INFO - Data successfully loaded from ./data/USA_Housing.csv
+2024-08-21 20:20:17,965 - INFO - Feature RoomBedroom_Ratio created.
+2024-08-21 20:20:17,970 - INFO - PCA will be applied with 5 components.
+2024-08-21 20:20:22,344 - INFO - Best params: {'model__alpha': 99.88996363967168, 'model__max_iter': 3681}
+2024-08-21 20:20:22,702 - INFO - Model Evaluation: {'MAE': 83717.96825761297, 'MSE': 10852716100.846674, 'R2': 0.9113696744321922}
+2024-08-21 20:20:22,702 - ERROR - Failed to save the model: [Errno 2] No such file or directory: './models/best_lasso_model.pkl'
+2024-08-21 20:21:12,227 - INFO - Data successfully loaded from ./data/USA_Housing.csv
+2024-08-21 20:21:12,228 - INFO - Feature RoomBedroom_Ratio created.
+2024-08-21 20:21:12,230 - INFO - PCA will be applied with 5 components.
+2024-08-21 20:21:17,161 - INFO - Best params: {'model__alpha': 99.18613886563406, 'model__max_iter': 3159}
+2024-08-21 20:21:17,550 - INFO - Model Evaluation: {'MAE': 83717.95624941078, 'MSE': 10852715695.6716, 'R2': 0.9113696777411149}
+2024-08-21 20:21:17,566 - INFO - Model saved to ./models/best_lasso_model.pkl
